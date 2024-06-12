@@ -10,14 +10,18 @@ import ShareIcon from "@mui/icons-material/Share";
 import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
 import "./App.css"; // Ensure you have a global CSS file if needed
+import AppsIcon from "@mui/icons-material/Apps";
+import IconButton from "@mui/material/IconButton";
+import Typography from "@mui/material/Typography";
+import MenuIcon from "@mui/icons-material/Menu";
 
 const OuterBox = styled(Box)({
   backgroundColor: "lightblue",
   padding: "10px",
   marginTop: "10px",
   display: "flex",
-  justifyContent: "center",
-  alignItems: "center",
+  justifyContent: "right",
+  alignItems: "right",
   width: "90%", // Adjust width to be a percentage of the viewport width
   maxWidth: "514px", // Set maximum width to limit the size on larger screens
   height: "auto", // Let the height adjust automatically based on content
@@ -38,7 +42,7 @@ const ShareButton = styled(Button)({
 function ChocalateBarNavigation() {
   const [isOpen, setIsOpen] = useState(false);
 
-  const toggleBox = () => {
+  const handleToggle = () => {
     setIsOpen(!isOpen);
   };
 
@@ -46,9 +50,24 @@ function ChocalateBarNavigation() {
     <div className="App">
       <AppBar position="static">
         <Toolbar>
-          <Box sx={{ flexGrow: 1 }}>
-            <NineDotsMenu toggleBox={toggleBox} />
-          </Box>
+          <IconButton
+            edge="start"
+            aria-label="apps"
+            onClick={handleToggle}
+            sx={{
+              bgcolor: "rgba(173, 216, 230, 0.3)", // very light blue background
+              border: "none",
+              outline: "none",
+              "&:hover": {
+                bgcolor: "rgba(173, 216, 230, 0.5)", // slightly darker on hover
+              },
+              "&:focus": {
+                outline: "none", // remove focus outline
+              },
+            }}
+          >
+            <AppsIcon sx={{ color: "#87CEEB" }} /> {/* sky blue color */}
+          </IconButton>
         </Toolbar>
       </AppBar>
       {isOpen && (
