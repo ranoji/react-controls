@@ -1,5 +1,6 @@
 import React from "react";
-import { Menu, MenuItem, Box, Button, Grid } from "@mui/material";
+import { Menu, Box, Button, Grid, Typography } from "@mui/material";
+import ShareIcon from "@mui/icons-material/Share";
 
 const CustomMenu = () => {
   const [anchorEl, setAnchorEl] = React.useState(null);
@@ -11,6 +12,16 @@ const CustomMenu = () => {
 
   const handleClose = () => {
     setAnchorEl(null);
+  };
+
+  const handleButtonClick = (index) => {
+    const baseUrl = window.location.origin;
+    const url = `${baseUrl}/link${index + 1}`;
+    if (index < 2) {
+      window.location.href = url; // Open in the same window for the first two buttons
+    } else {
+      window.open(url, "_blank"); // Open in a new tab for other buttons
+    }
   };
 
   return (
@@ -41,13 +52,29 @@ const CustomMenu = () => {
           },
         }}
       >
-        <Box sx={{ width: 300, p: 2 }}>
+        <Box sx={{ width: 400 }}>
           <Grid container spacing={2}>
             {Array.from({ length: 16 }).map((_, index) => (
               <Grid item xs={6} key={index}>
-                <Button fullWidth variant="contained" onClick={handleClose}>
-                  Button {index + 1}
-                </Button>
+                {index === 14 ? (
+                  <Button
+                    fullWidth
+                    variant="contained"
+                    disabled
+                    sx={{ color: "grey" }}
+                  >
+                    <Typography color="grey">Disabled</Typography>
+                  </Button>
+                ) : (
+                  <Button
+                    fullWidth
+                    variant="contained"
+                    onClick={() => handleButtonClick(index)}
+                    endIcon={<ShareIcon />}
+                  >
+                    Button {index + 1}
+                  </Button>
+                )}
               </Grid>
             ))}
           </Grid>
