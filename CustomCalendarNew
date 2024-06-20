@@ -1,5 +1,4 @@
-// CustomCalendar.js
-import React, { useState } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import {
   Box,
   Button,
@@ -11,8 +10,11 @@ import {
   Stack,
 } from "@mui/material";
 import { ArrowBack, ArrowForward, Today } from "@mui/icons-material";
+import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
+import ArrowBackIosIcon from "@mui/icons-material/ArrowBackIos";
 import HolidayIcon from "@mui/icons-material/Event";
 import IndexIcon from "@mui/icons-material/Assessment";
+import PolicyIcon from "@mui/icons-material/Gavel";
 import dayjs from "dayjs";
 import localizedFormat from "dayjs/plugin/localizedFormat";
 dayjs.extend(localizedFormat);
@@ -21,17 +23,82 @@ const events = {
   exchangeHolidays: [
     { date: "2024-06-14", name: "Flag Day" },
     { date: "2024-07-04", name: "Independence Day" },
-    { date: "2024-12-25", name: "Christmas Day" },
+    { date: "2024-06-21", name: "Christmas Day" },
   ],
   policies: [
     { date: "2024-06-10", name: "Policy Review" },
     { date: "2024-11-20", name: "Policy Update" },
   ],
   indices: [
-    { date: "2024-08-01", name: "Index Update" },
-    { date: "2024-06-15", name: "New Index Release" },
+    { date: "2024-06-21", name: "Index Update" },
+    { date: "2024-06-14", name: "New Index Release" },
   ],
 };
+
+const getEventsForDay = (date) => {
+  return {
+    exchangeHoliday: events.exchangeHolidays.find((event) =>
+      dayjs(event.date).isSame(date, "day")
+    ),
+    policy: events.policies.find((event) =>
+      dayjs(event.date).isSame(date, "day")
+    ),
+    index: events.indices.find((event) =>
+      dayjs(event.date).isSame(date, "day")
+    ),
+  };
+};
+
+const DayBox = React.memo(({ day, isToday, onDayClick, events }) => {
+  const { exchangeHoliday, policy, index } = events;
+  const isWeekend = day.day() === 0 || day.day() === 6;
+
+  let bgColor = "white";
+  if (exchangeHoliday) bgColor = "lightblue";
+  if (policy) bgColor = "orange";
+  if (isToday) bgColor = "lightgreen";
+  if (isWeekend) bgColor = "#f0f0f0";
+
+  return (
+    <Box
+      sx={{
+        padding: 1,
+        backgroundColor: bgColor,
+        border: isToday ? "1px solid green" : "0.5px solid lightgrey",
+        height: "50px",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "flex-end",
+        justifyContent: "space-between",
+        cursor: "pointer",
+        position: "relative",
+      }}
+      onClick={onDayClick}
+    >
+      <Typography
+        variant="body2"
+        sx={{ position: "absolute", top: 0, right: 0, m: 1 }}
+      >
+        {day.format("D")}
+      </Typography>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "flex-start",
+          alignItems: "center",
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          padding: 1,
+        }}
+      >
+        {exchangeHoliday && <HolidayIcon fontSize="14px" />}
+        {policy && <PolicyIcon fontSize="14px" />}
+        {index && <IndexIcon fontSize="14px" />}
+      </Box>
+    </Box>
+  );
+});
 
 const CustomCalendar = () => {
   const [currentDate, setCurrentDate] = useState(dayjs());
@@ -39,146 +106,142 @@ const CustomCalendar = () => {
   const [selectedDayDetails, setSelectedDayDetails] = useState([]);
   const today = dayjs();
 
-  const startDay = currentDate.startOf("month").startOf("week");
-  const endDay = currentDate.endOf("month").endOf("week");
+  const startDay = useMemo(
+    () => currentDate.startOf("month").startOf("week"),
+    [currentDate]
+  );
+  const endDay = useMemo(
+    () => currentDate.endOf("month").endOf("week"),
+    [currentDate]
+  );
 
-  const days = [];
-  let day = startDay;
+  const days = useMemo(() => {
+    const daysArray = [];
+    let day = startDay;
 
-  while (day.isBefore(endDay.add(1, "day"))) {
-    days.push(day);
-    // day = day.add(1, "day");
-  }
+    while (day.isBefore(endDay.add(0, "day"))) {
+      daysArray.push(day);
+      day = day.add(1, "day");
+    }
 
-  const handlePrevMonth = () => {
-    setCurrentDate(currentDate.subtract(1, "month"));
-  };
+    return daysArray;
+  }, [startDay, endDay]);
 
-  const handleNextMonth = () => {
-    setCurrentDate(currentDate.add(1, "month"));
-  };
+  const handlePrevMonth = useCallback(() => {
+    setCurrentDate((prevDate) => prevDate.subtract(1, "month"));
+  }, []);
 
-  const handleToday = () => {
+  const handleNextMonth = useCallback(() => {
+    setCurrentDate((prevDate) => prevDate.add(1, "month"));
+  }, []);
+
+  const handleToday = useCallback(() => {
     setCurrentDate(today);
-  };
+    const events = getEventsForDay(today);
+    setSelectedDayDetails(
+      [events.exchangeHoliday, events.policy, events.index].filter(Boolean)
+    );
+  }, [today]);
 
-  const handleDateChange = (event) => {
+  const handleDateChange = useCallback((event) => {
     const date = dayjs(event.target.value);
     if (date.isValid()) {
       setCurrentDate(date.startOf("month"));
       setAnchorEl(null);
     }
-  };
+  }, []);
 
-  const handleDateClick = (event) => {
+  const handleDateClick = useCallback((event) => {
     setAnchorEl(event.currentTarget);
-  };
+  }, []);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setAnchorEl(null);
-  };
+  }, []);
 
-  const getEventsForDay = (date) => {
-    const exchangeHoliday = events.exchangeHolidays.find((event) =>
-      dayjs(event.date).isSame(date, "day")
+  const handleDayClick = useCallback((day) => {
+    const events = getEventsForDay(day);
+    setSelectedDayDetails(
+      [events.exchangeHoliday, events.policy, events.index].filter(Boolean)
     );
-    const policy = events.policies.find((event) =>
-      dayjs(event.date).isSame(date, "day")
-    );
-    const index = events.indices.find((event) =>
-      dayjs(event.date).isSame(date, "day")
-    );
-    return { exchangeHoliday, policy, index };
-  };
-
-  const renderDay = (day) => {
-    const { exchangeHoliday, policy, index } = getEventsForDay(day);
-    const isToday = day.isSame(today, "day");
-
-    let bgColor = "white";
-    if (policy) bgColor = "orange";
-    if (isToday) bgColor = "lightgreen";
-
-    return (
-      <Box
-        key={day.format("YYYY-MM-DD")}
-        sx={{
-          padding: 1,
-          backgroundColor: bgColor,
-          border: isToday ? "1px solid green" : "0.5px solid grey",
-          height: "60px",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "flex-end",
-          justifyContent: "space-between",
-          cursor: "pointer",
-          position: "relative",
-        }}
-        onClick={() =>
-          setSelectedDayDetails(
-            [exchangeHoliday, policy, index].filter(Boolean)
-          )
-        }
-      >
-        <Typography
-          variant="body2"
-          sx={{ position: "absolute", top: 0, right: 0, m: 1 }}
-        >
-          {day.format("D")}
-        </Typography>
-        <Box
-          display="flex"
-          justifyContent="center"
-          alignItems="center"
-          flexDirection="column"
-        >
-          {exchangeHoliday && <HolidayIcon fontSize="small" />}
-          {index && <IndexIcon fontSize="small" />}
-        </Box>
-      </Box>
-    );
-  };
+  }, []);
 
   return (
-    <Box sx={{ margin: "0 auto", width: "80%" }}>
+    <Box
+      sx={{
+        margin: "0 auto",
+        width: "80%",
+        position: "relative",
+      }}
+    >
       <Box
         display="flex"
         justifyContent="space-between"
         alignItems="center"
         mb={2}
       >
-        {/* Legends */}
         <Box display="flex" alignItems="center">
           <Box display="flex" alignItems="center" mr={2}>
             <Box
               sx={{
-                width: 20,
-                height: 20,
+                width: 10,
+                height: 10,
                 backgroundColor: "lightblue",
-                borderRadius: "50%",
+                borderRadius: "5%",
                 marginRight: 1,
               }}
             />
             <Typography>Exchange Holiday</Typography>
           </Box>
-          <Box display="flex" alignItems="center">
+          <Box display="flex" alignItems="center" mr={2}>
             <Box
               sx={{
-                width: 20,
-                height: 20,
+                width: 10,
+                height: 10,
                 backgroundColor: "orange",
-                borderRadius: "50%",
+                borderRadius: "5%",
                 marginRight: 1,
               }}
             />
             <Typography>Policy</Typography>
           </Box>
+          <Box display="flex" alignItems="center">
+            <Box
+              sx={{
+                width: 10,
+                height: 10,
+                backgroundColor: "white",
+                border: "1px solid grey",
+                borderRadius: "5%",
+                marginRight: 1,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <IndexIcon fontSize="14px" />
+            </Box>
+            <Typography>Index</Typography>
+          </Box>
         </Box>
-
-        {/* Month/Year and Navigation */}
         <Box display="flex" justifyContent="center" alignItems="center">
-          <IconButton onClick={handlePrevMonth}>
-            <ArrowBack />
+          <IconButton
+            onClick={handlePrevMonth}
+            sx={{
+              userSelect: "none",
+              outline: "none",
+              "&:focus": {
+                outline: "none",
+              },
+              "&:active": {
+                outline: "none",
+              },
+              "&:hover": {
+                backgroundColor: "transparent", // Or any other style you prefer
+              },
+            }}
+          >
+            <ArrowBackIosIcon />
           </IconButton>
           <Typography
             variant="h6"
@@ -206,59 +269,92 @@ const CustomCalendar = () => {
               />
             </Box>
           </Popover>
-          <IconButton onClick={handleNextMonth}>
-            <ArrowForward />
+          <IconButton
+            onClick={handleNextMonth}
+            sx={{
+              userSelect: "none",
+              outline: "none",
+              "&:focus": {
+                outline: "none",
+              },
+              "&:active": {
+                outline: "none",
+              },
+              "&:hover": {
+                backgroundColor: "transparent", // Or any other style you prefer
+              },
+            }}
+          >
+            <ArrowForwardIosIcon />
           </IconButton>
         </Box>
-
-        {/* Today Button */}
         <Button
+          variant="contained"
+          color="primary"
           sx={{
             boxShadow: "none",
             "&:hover": {
               backgroundColor: "skyblue",
               boxShadow: "none",
-              border: "",
+            },
+            "&:focus": {
+              outline: "none",
+              boxShadow: "none",
+            },
+            "&:active": {
+              outline: "none",
+              boxShadow: "none",
             },
           }}
           onClick={handleToday}
-          startIcon={<Today />}
         >
           Today
         </Button>
       </Box>
-
-      <Grid container spacing={0}>
-        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-          <Grid item xs={1.714} key={day}>
-            <Box sx={{ textAlign: "center" }}>
-              <Typography>{day}</Typography>
-            </Box>
-          </Grid>
-        ))}
-      </Grid>
       <Grid container spacing={0}>
         {days.map((day) => (
           <Grid item xs={1.714} key={day.format("YYYY-MM-DD")}>
-            {renderDay(day)}
+            <DayBox
+              day={day}
+              isToday={day.isSame(today, "day")}
+              onDayClick={() => handleDayClick(day)}
+              events={getEventsForDay(day)}
+            />
           </Grid>
         ))}
       </Grid>
-      {selectedDayDetails.length > 0 && (
-        <Box mt={2}>
-          <Typography variant="h6">Events on Selected Day:</Typography>
-          {selectedDayDetails.map((event, index) => (
-            <Box key={index} display="flex" alignItems="center" mb={1}>
-              {event.name === "Holiday" ? (
-                <HolidayIcon fontSize="small" sx={{ mr: 0.5 }} />
-              ) : (
-                <IndexIcon fontSize="small" sx={{ mr: 0.5 }} />
-              )}
-              <Typography>{event.name}</Typography>
-            </Box>
-          ))}
+      <Stack direction="row" justifyContent="space-between">
+        <Box
+          sx={{
+            position: "relative",
+            m: 2,
+            mt: 2,
+          }}
+        >
+          <Typography>{today.format("dddd, MMMM D, YYYY")}</Typography>
         </Box>
-      )}
+        {selectedDayDetails.length > 0 && (
+          <Box
+            sx={{
+              position: "relative",
+              m: 2,
+            }}
+          >
+            {selectedDayDetails.map((event, index) => (
+              <Box key={index} display="flex" alignItems="center" mb={1}>
+                {event.name === "Holiday" ? (
+                  <HolidayIcon fontSize="14px" sx={{ mr: 0.5 }} />
+                ) : event.name === "Policy" ? (
+                  <PolicyIcon fontSize="14px" sx={{ mr: 0.5 }} />
+                ) : (
+                  <IndexIcon fontSize="14px" sx={{ mr: 0.5 }} />
+                )}
+                <Typography>{event.name}</Typography>
+              </Box>
+            ))}
+          </Box>
+        )}
+      </Stack>
     </Box>
   );
 };
