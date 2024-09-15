@@ -1,49 +1,52 @@
 Slide 1: Digital Channel Overview & Key Highlights
 Digital Channel Overview
-Our Digital Channel is designed to support a broad array of applications, ensuring robust functionality and seamless user experiences. Here’s a snapshot of what we manage:
+Our Digital Channel supports over 18 diverse applications, focusing on delivering exceptional performance and user experience. Our responsibilities include:
 
-Application Support: We handle over 18 diverse applications.
-Core Functions:
-Quality Assurance (QA): Ensuring the highest standards of performance and reliability.
-Change Request (CR) Management: Efficiently managing and implementing changes.
+Quality Assurance (QA): Ensuring the highest standards of application performance and reliability.
+Change Request (CR) Management: Efficiently handling and implementing changes.
 Enhancements: Continuously improving functionality based on user feedback and evolving needs.
 Support: Providing ongoing assistance to address issues and optimize performance.
+Key Technologies
+Frontend Development: ReactJS, AngularJS
+Backend Development: ASP.NET, NodeJS, .NET Core, NextJS, NestJS
+Databases: SQL Server, MongoDB
+Search Technology: Elastic Search
 Major Highlights
 MATA (Multi Asset Trade Analytics):
 
-Purpose: MATA is a global analytics platform created by RBC to assist traders and clients in navigating complex financial markets. It provides insights that support better trading decisions.
-Features: Offers analytics for various financial instruments, including Equities, Futures, FX (Foreign Exchange), and Indexes.
-Currency Support: Handles major currencies such as CAD, EUR, USD, and GBP.
+Purpose: A global market analytics platform by RBC designed to help traders and clients make informed decisions in complex financial markets.
+Features: Provides analytics for Equities, Futures, FX, and Indexes.
+Currency Support: CAD, EUR, USD, GBP.
 WSS (Web Security Services):
 
-Role: Ensures that applications and API gateways are accessible from outside the RBC network, while providing secure external authentication.
+Function: Facilitates external access to applications and API gateways while ensuring secure authentication.
 F5 Load Balancer:
 
-Function: Balances the load of web applications across multiple data centers and handles SSL termination to secure data transmission.
+Role: Distributes traffic across data centers and handles SSL termination to secure connections.
 MATA Web Server:
 
-Purpose: Delivers Single Page Applications (SPA) and assets, supports server-side rendering and prerendering to enhance performance and user experience, and routes API requests effectively.
+Purpose: Hosts Single Page Applications (SPA), supports server-side rendering, and manages API requests.
 Apigee Edge:
 
-Service: Manages API services with comprehensive features, including load balancing, orchestration, authentication, and analytics.
+Service: Manages API services with features like load balancing, orchestration, and authentication.
 Microservices:
 
-PDF Reports Service: Responsible for generating and managing user reports in PDF and Excel formats.
-User Preference Service: Manages and retrieves user preferences.
-QTK: Provides in-depth trade analytics.
-Platform AI: Delivers AI-driven recommendations and personalization.
-CM Entitlements: Handles user access and entitlements.
-Azure AD: Manages internal user authentication and access.
+PDF Reports Service: Generates and manages PDF/Excel reports.
+User Preference Service: Manages user preferences.
+QTK: Provides trade analytics.
+Platform AI: Offers AI-driven recommendations and personalization.
+CM Entitlements: Manages user access and entitlements.
+Azure AD: Handles internal user authentication.
 Slide 2: QA, Automation, and Future Roadmap
 Quality Assurance and Automation
 Automated Deployment:
 
-Pipeline: Our deployment process is automated from code commit to production, utilizing Helios and Compute Fabric across DEV, QA, and PROD environments.
+Pipeline: Full end-to-end deployment process integrated with Helios and Compute Fabric for DEV, QA, and PROD environments.
 Testing and Quality Assurance:
 
-Robot Framework with Compute Fabric: We use a Dockerized test suite integrated with Compute Fabric, removing dependencies on virtual machines and browsers for consistent and reliable test execution.
-Lighthouse for MATA: Implements accessibility and performance assessments, offering insights similar to those used by major tech companies to ensure the application meets high standards of usability and speed.
-JMeter with Compute Fabric: Conducts performance testing for MATA, integrated uniquely with Compute Fabric, setting us apart from other projects that rely on OpenShift or virtual machine environments.
+Robot Framework with Compute Fabric: Dockerized test suite for consistent automation, removing VM and browser dependencies.
+Lighthouse for MATA: Conducts accessibility and performance assessments to ensure high usability and speed, similar to major tech companies’ practices.
+JMeter with Compute Fabric: Performs unique performance testing for MATA, integrated with Compute Fabric, distinguishing it from other projects.
 Future Roadmap
-MATA Phase 3: We are actively working on Phase 3 enhancements, which will further expand the platform's capabilities and features.
-Data Quality Checks: Ongoing efforts to ensure data integrity and accuracy using Python for comprehensive quality assessments.
+MATA Phase 3: Ongoing development to enhance the platform’s features and capabilities.
+Data Quality Checks: Utilizing Python for ongoing data integrity and quality assessments.
