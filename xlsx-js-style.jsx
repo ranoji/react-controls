@@ -235,3 +235,18 @@ data.forEach((item, rowIndex) => {
             }
         });
     });
+
+const getExcelColumnLetter = (colIndex) => {
+    let letter = '';
+    while (colIndex >= 0) {
+        letter = String.fromCharCode((colIndex % 26) + 65) + letter;
+        colIndex = Math.floor(colIndex / 26) - 1;
+    }
+    return letter;
+};
+
+// Function to get the cell address dynamically based on column and row index
+const getCellAddress = (colIndex, rowIndex) => {
+    const columnLetter = getExcelColumnLetter(colIndex);
+    return `${columnLetter}${rowIndex + 1}`; // Add 1 to rowIndex to match Excel's 1-based rows
+};
