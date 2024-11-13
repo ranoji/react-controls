@@ -213,3 +213,25 @@ const ETEwtExcelJS = () => {
 };
 
 export default ETEwtExcelJS;
+
+data.forEach((item, rowIndex) => {
+        Object.keys(item).forEach((key, colIndex) => {
+            const cellAddress = XLSX.utils.encode_cell({ c: colIndex, r: rowIndex + 1 }); // +1 if header row exists
+            const cell = worksheet[cellAddress];
+            
+            if (typeof item[key] === 'number') {
+                // Check if the number is positive or negative
+                if (item[key] > 0) {
+                    // Positive: Set the style to blue
+                    cell.s = {
+                        font: { color: { rgb: "0000FF" } } // Blue color
+                    };
+                } else if (item[key] < 0) {
+                    // Negative: Set the style to red
+                    cell.s = {
+                        font: { color: { rgb: "FF0000" } } // Red color
+                    };
+                }
+            }
+        });
+    });
