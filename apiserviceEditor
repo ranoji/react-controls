@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-import { Box, Select, MenuItem, Typography, Button, Paper } from "@mui/material";
+import { Box, Select, MenuItem, IconButton, Typography, Paper } from "@mui/material";
 import { ContentCopy } from "@mui/icons-material";
 
-const CodeEditorWithLanguageSelector = ({ codeSnippets }) => {
+const CodeEditorWithLanguageSelector = ({ title, codeSnippets }) => {
   const languages = Object.keys(codeSnippets); // Extract available languages
   const [selectedLanguage, setSelectedLanguage] = useState(languages[0]); // Default to the first language
 
@@ -12,48 +12,88 @@ const CodeEditorWithLanguageSelector = ({ codeSnippets }) => {
   };
 
   return (
-    <Box sx={{ padding: 4 }}>
-      <Typography variant="h6" gutterBottom>
-        Select Language to View Code
-      </Typography>
-
-      {/* Language Selector */}
-      <Select
-        value={selectedLanguage}
-        onChange={(e) => setSelectedLanguage(e.target.value)}
-        sx={{ marginBottom: 3, width: "200px" }}
+    <Box
+      sx={{
+        position: "relative",
+        border: "1px solid black", // Black border for the editor
+        borderRadius: "8px", // Rounded corners
+        backgroundColor: "white", // Editor background
+        padding: "16px",
+        overflow: "hidden", // Prevent content overflow
+      }}
+    >
+      {/* Header with Dropdown and Copy Button */}
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: "8px",
+        }}
       >
-        {languages.map((lang) => (
-          <MenuItem key={lang} value={lang}>
-            {lang.toUpperCase()}
-          </MenuItem>
-        ))}
-      </Select>
-
-      {/* Code Editor */}
-      <Paper elevation={3} sx={{ padding: 3, backgroundColor: "#f9f9f9" }}>
         <Typography
-          component="pre"
-          sx={{
-            whiteSpace: "pre-wrap",
-            fontFamily: "monospace",
-            fontSize: "14px",
-            marginBottom: 2,
-          }}
+          sx={{ fontSize: "14px", fontWeight: "bold", color: "#555" }}
         >
-          {codeSnippets[selectedLanguage]}
+          {title || "CODE SNIPPET"}
         </Typography>
 
-        {/* Copy Button */}
-        <Button
-          variant="contained"
-          color="primary"
-          startIcon={<ContentCopy />}
-          onClick={handleCopy}
+        {/* Language Selector */}
+        <Select
+          value={selectedLanguage}
+          onChange={(e) => setSelectedLanguage(e.target.value)}
+          size="small"
+          sx={{
+            backgroundColor: "#f0f0f0", // Light gray background
+            borderRadius: "4px", // Rounded corners
+            fontSize: "14px",
+            fontWeight: "bold",
+          }}
         >
-          Copy
-        </Button>
+          {languages.map((lang) => (
+            <MenuItem key={lang} value={lang}>
+              {lang.toUpperCase()}
+            </MenuItem>
+          ))}
+        </Select>
+      </Box>
+
+      {/* Code Editor */}
+      <Paper
+        elevation={0}
+        sx={{
+          backgroundColor: "white", // White editor background
+          padding: "12px",
+          borderRadius: "4px",
+          fontFamily: "monospace",
+          fontSize: "14px",
+          color: "#333",
+          whiteSpace: "pre-wrap",
+          overflowX: "auto", // Scroll horizontally if content overflows
+          border: "1px solid #e0e0e0", // Light border for the editor
+        }}
+      >
+        {codeSnippets[selectedLanguage]}
       </Paper>
+
+      {/* Copy Button */}
+      <Box
+        sx={{
+          position: "absolute",
+          top: "12px",
+          right: "12px",
+        }}
+      >
+        <IconButton
+          color="primary"
+          onClick={handleCopy}
+          sx={{
+            backgroundColor: "#f0f0f0", // Light background
+            borderRadius: "50%",
+          }}
+        >
+          <ContentCopy />
+        </IconButton>
+      </Box>
     </Box>
   );
 };
