@@ -1,0 +1,125 @@
+import React, { useState } from "react";
+import { Box, Select, MenuItem, Typography, Button, Paper } from "@mui/material";
+import { ContentCopy } from "@mui/icons-material";
+
+const CodeEditorWithLanguageSelector = ({ codeSnippets }) => {
+  const languages = Object.keys(codeSnippets); // Extract available languages
+  const [selectedLanguage, setSelectedLanguage] = useState(languages[0]); // Default to the first language
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(codeSnippets[selectedLanguage]);
+    alert("Code copied to clipboard!");
+  };
+
+  return (
+    <Box sx={{ padding: 4 }}>
+      <Typography variant="h6" gutterBottom>
+        Select Language to View Code
+      </Typography>
+
+      {/* Language Selector */}
+      <Select
+        value={selectedLanguage}
+        onChange={(e) => setSelectedLanguage(e.target.value)}
+        sx={{ marginBottom: 3, width: "200px" }}
+      >
+        {languages.map((lang) => (
+          <MenuItem key={lang} value={lang}>
+            {lang.toUpperCase()}
+          </MenuItem>
+        ))}
+      </Select>
+
+      {/* Code Editor */}
+      <Paper elevation={3} sx={{ padding: 3, backgroundColor: "#f9f9f9" }}>
+        <Typography
+          component="pre"
+          sx={{
+            whiteSpace: "pre-wrap",
+            fontFamily: "monospace",
+            fontSize: "14px",
+            marginBottom: 2,
+          }}
+        >
+          {codeSnippets[selectedLanguage]}
+        </Typography>
+
+        {/* Copy Button */}
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<ContentCopy />}
+          onClick={handleCopy}
+        >
+          Copy
+        </Button>
+      </Paper>
+    </Box>
+  );
+};
+
+export default CodeEditorWithLanguageSelector;
+
+--------------------------------------------------------------------
+
+App.js
+
+import React from "react";
+import CodeEditorWithLanguageSelector from "./CodeEditorWithLanguageSelector";
+
+const codeSnippets = {
+  java: `
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.io.OutputStream;
+
+public class Main {
+    public static void main(String[] args) throws Exception {
+        URL url = new URL("https://api.example.com/endpoint");
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        connection.setRequestMethod("POST");
+        connection.setRequestProperty("Content-Type", "application/json");
+        connection.setDoOutput(true);
+
+        String requestBody = "{\\"key1\\": \\"value1\\", \\"key2\\": \\"value2\\"}";
+        try (OutputStream os = connection.getOutputStream()) {
+            os.write(requestBody.getBytes());
+        }
+
+        System.out.println(connection.getResponseCode());
+    }
+}
+  `,
+  nodejs: `
+const axios = require('axios');
+
+axios.post('https://api.example.com/endpoint', {
+    key1: 'value1',
+    key2: 'value2'
+})
+.then(response => {
+    console.log(response.data);
+})
+.catch(error => {
+    console.error(error);
+});
+  `,
+  curl: `
+curl -X POST https://api.example.com/endpoint \\
+-H "Content-Type: application/json" \\
+-d '{"key1": "value1", "key2": "value2"}'
+  `,
+};
+
+const App = () => {
+  return (
+    <div>
+      <Typography variant="h4" gutterBottom>
+        API Documentation
+      </Typography>
+      <CodeEditorWithLanguageSelector codeSnippets={codeSnippets} />
+    </div>
+  );
+};
+
+export default App;
