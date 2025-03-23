@@ -1,24 +1,25 @@
-const mergeArrays = (arr1, arr2) => {
-  const mergedMap = new Map();
+function transformDataToArray(data) {
+    // Step 1: Group data by date
+    let groupedData = {};
+    let uniqueKeys = new Set();
 
-  // Helper function to add or update an entry in the map
-  const addToMap = (item) => {
-    const { date, ...rest } = item;
-    if (!mergedMap.has(date)) {
-      mergedMap.set(date, { date });
-    }
-    mergedMap.set(date, { ...mergedMap.get(date), ...rest });
-  };
+    data.forEach(({ date, key, value }) => {
+        if (!groupedData[date]) {
+            groupedData[date] = {};
+        }
+        groupedData[date][key] = value;
+        uniqueKeys.add(key);
+    });
 
-  // Add items from the first array
-  arr1.forEach(addToMap);
+    // Step 2: Sort keys alphabetically to ensure column order consistency
+    const sortedKeys = [...uniqueKeys].sort();
 
-  // Add items from the second array
-  arr2.forEach(addToMap);
+    // Step 3: Convert grouped data into an array format
+    const result = Object.entries(groupedData).map(([date, values]) => {
+        // Extract values in the correct key order
+        const rowValues = sortedKeys.map(key => values[key] || 0); // Default to 0 if key is missing
+        return [date, ...rowValues];
+    });
 
-  // Convert map to array
-  return Array.from(mergedMap.values());
-};
-
-const mergedArray = mergeArrays(array1, array2);
-console.log(mergedArray);
+    return result;
+}
