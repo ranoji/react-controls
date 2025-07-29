@@ -1,18 +1,52 @@
-const getLimitedRange = (startIndex, endIndex) => {
-  const totalRange = endIndex - startIndex + 1;
+import { toPng } from 'html-to-image';
+import download from 'downloadjs';
+import React, { useRef } from 'react';
 
-  if (totalRange <= 15) {
-    return timeIntervals.slice(startIndex, endIndex + 1);
-  }
+const MyComponent = () => {
+  const captureRef = useRef();
 
-  const result = [timeIntervals[startIndex]]; // Always include start
-  const step = (endIndex - startIndex) / (15 - 2); // Step for intermediate values
+  const handleCapture = async () => {
+    const node = captureRef.current;
 
-  for (let i = 1; i < 14; i++) {
-    const index = Math.round(startIndex + i * step);
-    result.push(timeIntervals[index]);
-  }
+    const dataUrl = await toPng(node, {
+      cacheBust: true,
+      // This is the key: retain the scroll position by setting "width" and "height"
+      width: node.offsetWidth,
+      height: node.offsetHeight,
+      style: {
+        transform: 'none', // prevent unwanted resets
+      },
+    });
 
-  result.push(timeIntervals[endIndex]); // Always include end
-  return [...new Set(result)];
+    download(dataUrl, 'capture.png');
+  };
+
+  return (
+    <div>
+      <button onClick={handleCapture}>Save as Image</button>
+
+      <div
+        ref={captureRef}
+        style={{
+          height: '400px',
+          overflowY: 'auto',
+          border: '1px solid black',
+        }}
+      >
+        {/* Virtualized or regular list */}
+        {[...Array(1000)].map((_, i) => (
+          <div
+            key={i}
+            style={{
+              height: 40,
+              borderBottom: '1px solid #ccc',
+              padding: '8px',
+            }}
+          >
+            Row #{i + 1}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 };
