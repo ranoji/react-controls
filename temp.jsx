@@ -1,52 +1,88 @@
-import { toPng } from 'html-to-image';
-import download from 'downloadjs';
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
+import { AgGridReact } from 'ag-grid-react';
+import { ModuleRegistry } from 'ag-grid-community';
+import { ClientSideRowModelModule } from 'ag-grid-community';
+import * as htmlToImage from 'html-to-image';
 
-const MyComponent = () => {
-  const captureRef = useRef();
+import 'ag-grid-community/styles/ag-grid.css';
+import 'ag-grid-community/styles/ag-theme-alpine.css';
 
-  const handleCapture = async () => {
-    const node = captureRef.current;
+// Register AG Grid modules
+ModuleRegistry.registerModules([ClientSideRowModelModule]);
 
-    const dataUrl = await toPng(node, {
-      cacheBust: true,
-      // This is the key: retain the scroll position by setting "width" and "height"
-      width: node.offsetWidth,
-      height: node.offsetHeight,
-      style: {
-        transform: 'none', // prevent unwanted resets
-      },
-    });
+const App = () => {
+  const gridRef = useRef(null);
+  const wrapperRef = useRef(null);
 
-    download(dataUrl, 'capture.png');
+  const [rowData] = useState(
+    Array.from({ length: 100 }, (_, i) => ({
+      id: i + 1,
+      name: `User ${i + 1}`,
+      email: `user${i + 1}@example.com`,
+    }))
+  );
+
+  const columnDefs = [
+    { field: 'id', headerName: 'ID' },
+    { field: 'name', headerName: 'Name' },
+    { field: 'email', headerName: 'Email' },
+  ];
+
+  const handleSaveImage = () => {
+    const gridBody = document.querySelector('.ag-body-viewport');
+
+    // Scroll to top using both DOM and AG Grid API
+    if (gridBody) gridBody.scrollTop = 0;
+    if (gridRef.current && gridRef.current.api) {
+      gridRef.current.api.ensureIndexVisible(0, 'top');
+    }
+
+    // Delay capture to let scroll/render settle
+    setTimeout(() => {
+      htmlToImage
+        .toPng(wrapperRef.current, {
+          pixelRatio: 2,
+          cacheBust: true,
+        })
+        .then((dataUrl) => {
+          const link = document.createElement('a');
+          link.download = 'grid-top-capture.png';
+          link.href = dataUrl;
+          link.click();
+        })
+        .catch((err) => {
+          console.error('Capture failed:', err);
+        });
+    }, 500);
   };
 
   return (
-    <div>
-      <button onClick={handleCapture}>Save as Image</button>
+    <div style={{ padding: '1rem' }}>
+      <button onClick={handleSaveImage} style={{ marginBottom: '10px' }}>
+        Capture Grid with Header
+      </button>
 
-      <div
-        ref={captureRef}
-        style={{
-          height: '400px',
-          overflowY: 'auto',
-          border: '1px solid black',
-        }}
-      >
-        {/* Virtualized or regular list */}
-        {[...Array(1000)].map((_, i) => (
-          <div
-            key={i}
-            style={{
-              height: 40,
-              borderBottom: '1px solid #ccc',
-              padding: '8px',
-            }}
-          >
-            Row #{i + 1}
-          </div>
-        ))}
+      <div ref={wrapperRef} style={{ border: '1px solid #ccc', padding: '1rem' }}>
+        {/* Grid Header */}
+        <h2 style={{ marginTop: 0, marginBottom: '1rem', textAlign: 'center' }}>
+          👥 User List Grid
+        </h2>
+
+        <div
+          className="ag-theme-alpine"
+          style={{ height: '300px', width: '100%' }}
+        >
+          <AgGridReact
+            ref={gridRef}
+            rowData={rowData}
+            columnDefs={columnDefs}
+            defaultColDef={{ flex: 1 }}
+            domLayout="normal"
+          />
+        </div>
       </div>
     </div>
   );
 };
+
+export default App;
