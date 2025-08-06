@@ -1,0 +1,57 @@
+Header,User Management (MIS)
+GET /api/mis/users,List Internal Users
+POST /api/mis/users,Create New Internal User
+PUT /api/mis/users/{id},Update Internal User Info
+DELETE /api/mis/users/{id},Soft Delete Internal User
+
+Header,Research Management (MIS)
+Note,APIs not explicitly listed, inferred from sheet headers. Can be added later if needed.
+
+Header,HR, Access & Certification (MIS)
+POST /api/mis/user/hr,Save HR Details
+POST /api/mis/user/access,Save Access Info
+POST /api/mis/user/certification,Save Certifications
+POST /api/mis/user/files,Upload User Files
+
+Header,Access Matrix / Admin Panel (MIS)
+GET /api/mis/roles/matrix,Get Access Role Matrix
+POST /api/mis/roles/matrix,Save Access Role Matrix
+
+Header,Reporting & Certifications (MIS)
+GET /api/mis/reports/certifications,Fetch Certification Status
+GET /api/mis/reports/audit,Download Certification Audit Report
+
+Header,Document Management (MIS)
+POST /api/mis/user/files,Upload Document
+
+Header,External Access Requests (Entitlement)
+GET /api/entitlement/request,Get My Requests
+POST /api/entitlement/request,Create Access Request
+POST /api/entitlement/request/upload/{uploadType},Upload Document
+POST /api/entitlement/request/historical-remove,Request Historical Removal
+POST /api/entitlement/request/completed,Mark Request Completed
+POST /api/entitlement/request/bulk-remove,Bulk Remove Access
+
+Header,Approval Workflow (Entitlement)
+POST /api/entitlement/request/assign-sponsor,Assign Sponsor
+POST /api/entitlement/request/approve,Approve Request
+POST /api/entitlement/request/approveMultiple,Bulk Approve Requests
+
+Header,Request Details (Entitlement)
+GET /api/entitlement/request/contactEmail,Get Contact Email Info
+GET /api/entitlement/request/view/{requestedByEmail},View Request by Email
+POST /api/entitlement/request/pending-vendor-update,Vendor Update
+
+Header,Entitlements View (Entitlement)
+GET /api/entitlement/history,View History
+POST /api/entitlement/active,Save Active Access
+GET /api/entitlement,View All Entitlements
+GET /api/entitlement/{contactEmail},View by Email
+GET /api/entitlement/{contactEmail}/{vendorName},View by Email & Vendor
+
+Header,Audit Trail (Entitlement)
+GET /api/entitlement/request/audit/{entitlementRequestId},View Audit by Request
+GET /api/entitlement/fetch/audit/{contactEmail},View Audit by User
+
+Header,Shared APIs
+GET /api/mis/lookup,Lookup Data Tables
