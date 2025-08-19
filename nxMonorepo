@@ -1,0 +1,495 @@
+# Nx Monorepo – Node.js (JavaScript, MongoDB, JWT)
+
+This setup builds a **clean architecture Nx monorepo** for Node.js, MongoDB, and JWT authentication. Includes:
+
+* **API Gateway app** (Express)
+* **Auth Module** with JWT
+* **Users, Products, Orders modules**
+* **MongoDB repository layer**
+* **JWT middleware & route guards**
+* **Deployment ready for Compute Fabric + Helios CI/CD**
+
+---
+
+## 📂 Monorepo Structure
+
+```bash
+nx-node-monorepo/
+│── apps/
+│   └── api/                   # API Gateway
+│       ├── src/main.js
+│       ├── src/routes.js
+│       └── src/middleware/
+│           └── authMiddleware.js
+│
+│── libs/
+│   ├── core/                  # Shared utils & Mongo connection
+│   │   └── src/mongo.js
+│   ├── auth/                  # Auth module
+│   │   ├── src/authService.js
+│   │   ├── src/authController.js
+│   │   └── src/authRoutes.js
+│   ├── users/                 # Users module
+│   │   ├── src/userService.js
+│   │   ├── src/userRepository.js
+│   │   └── src/userRoutes.js
+│   ├── products/              # Products module
+│   │   ├── src/productService.js
+│   │   ├── src/productRepository.js
+│   │   └── src/productRoutes.js
+│   └── orders/                # Orders module
+│       ├── src/orderService.js
+│       ├── src/orderRepository.js
+│       └── src/orderRoutes.js
+│
+└── package.json
+```
+
+---
+
+## 🚀 MongoDB Connection (libs/core/src/mongo.js)
+
+```js
+const { MongoClient } = require('mongodb');
+
+let client;
+let db;
+
+async function connectMongo(uri, dbName) {
+  if (!client) {
+    client = new MongoClient(uri);
+    await client.connect();
+    db = client.db(dbName);
+    console.log(`✅ Connected to MongoDB: ${dbName}`);
+  }
+  return db;
+}
+
+function getDb() {
+  if (!db) throw new Error('MongoDB not connected');
+  return db;
+}
+
+module.exports = { connectMongo, getDb };
+```
+
+---
+
+## 🔑 JWT Middleware (apps/api/src/middleware/authMiddleware.js)
+
+```js
+const jwt = require('jsonwebtoken');
+
+function authGuard(req, res, next) {
+  const token = req.headers['authorization']?.split(' ')[1];
+  if (!token) return res.status(401).json({ message: 'No token provided' });
+
+  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+    if (err) return res.status(403).json({ message: 'Invalid token' });
+    req.user = decoded;
+    next();
+  });
+}
+
+module.exports = { authGuard };
+```
+
+---
+
+## 🔐 Auth Module
+
+### libs/auth/src/authService.js
+
+```js
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
+const { getDb } = require('../../core/src/mongo');
+
+async function registerUser(email, password) {
+  const db = getDb();
+  const existing = await db.collection('users').findOne({ email });
+  if (existing) throw new Error('User already exists');
+
+  const hashed = await bcrypt.hash(password, 10);
+  await db.collection('users').insertOne({ email, password: hashed });
+  return { email };
+}
+
+async function loginUser(email, password) {
+  const db = getDb();
+  const user = await db.collection('users').findOne({ email });
+  if (!user) throw new Error('Invalid credentials');
+
+  const valid = await bcrypt.compare(password, user.password);
+  if (!valid) throw new Error('Invalid credentials');
+
+  const token = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '1h' });
+  return { token };
+}
+
+module.exports = { registerUser, loginUser };
+```
+
+### libs/auth/src/authController.js
+
+```js
+const { registerUser, loginUser } = require('./authService');
+
+async function register(req, res) {
+  try {
+    const result = await registerUser(req.body.email, req.body.password);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+}
+
+async function login(req, res) {
+  try {
+    const result = await loginUser(req.body.email, req.body.password);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+}
+
+module.exports = { register, login };
+```
+
+### libs/auth/src/authRoutes.js
+
+```js
+const express = require('express');
+const { register, login } = require('./authController');
+const router = express.Router();
+
+router.post('/register', register);
+router.post('/login', login);
+
+module.exports = router;
+```
+
+---
+
+## 👤 Users Module Example
+
+### libs/users/src/userRoutes.js
+
+```js
+const express = require('express');
+const { authGuard } = require('../../../apps/api/src/middleware/authMiddleware');
+const { getAllUsers } = require('./userService');
+
+const router = express.Router();
+
+router.get('/', authGuard, async (req, res) => {
+  try {
+    const users = await getAllUsers();
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+module.exports = router;
+```
+
+### libs/users/src/userService.js
+
+```js
+const { getDb } = require('../../core/src/mongo');
+
+async function getAllUsers() {
+  const db = getDb();
+  return db.collection('users').find({}, { projection: { password: 0 } }).toArray();
+}
+
+module.exports = { getAllUsers };
+```
+
+---
+
+## 🚏 API Gateway (apps/api/src/main.js)
+
+```js
+const express = require('express');
+const bodyParser = require('body-parser');
+require('dotenv').config();
+
+const { connectMongo } = require('../../libs/core/src/mongo');
+const authRoutes = require('../../libs/auth/src/authRoutes');
+const userRoutes = require('../../libs/users/src/userRoutes');
+
+const app = express();
+app.use(bodyParser.json());
+
+// Routes
+app.use('/auth', authRoutes);
+app.use('/users', userRoutes);
+
+const PORT = process.env.PORT || 4000;
+(async () => {
+  await connectMongo(process.env.MONGO_URI, process.env.DB_NAME);
+  app.listen(PORT, () => console.log(`🚀 API running on http://localhost:${PORT}`));
+})();
+```
+
+---
+
+## ⚙️ Deployment (Compute Fabric + Helios)
+
+1. **Dockerfile**
+
+```dockerfile
+FROM node:18
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+CMD ["node", "apps/api/src/main.js"]
+```
+
+2. **Helios CI/CD Pipeline (helios.yml)**
+
+```yaml
+version: v1
+name: nx-node-monorepo
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - 4000:4000
+    env:
+      - MONGO_URI=${MONGO_URI}
+      - DB_NAME=${DB_NAME}
+      - JWT_SECRET=${JWT_SECRET}
+```
+
+---
+
+✅ With this, you have:
+
+* MongoDB connection
+* JWT auth & guard middleware
+* Users API (protected)
+* Auth API (register/login)
+* Deployable to Compute Fabric & Helios
+
+---
+
+---
+
+## 15) Orders Module – MongoDB + JWT Guards (JS)
+
+This adds a full **Orders** module with:
+
+* Mongoose models
+* Authenticated endpoints
+* Ownership/role checks (`user` vs `admin`)
+* Server-side price snapshot & total calculation
+
+### 15.1 Folder layout
+
+```
+libs/orders/
+  order.model.js
+  order.repo.js (optional abstraction)
+  order.routes.js
+```
+
+### 15.2 `libs/orders/order.model.js`
+
+```js
+const mongoose = require('mongoose');
+
+const OrderItemSchema = new mongoose.Schema({
+  productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
+  name: { type: String, required: true },        // snapshot
+  price: { type: Number, required: true },       // snapshot (cents or float)
+  qty: { type: Number, required: true, min: 1 }
+}, { _id: false });
+
+const OrderSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+  items: { type: [OrderItemSchema], required: true },
+  subtotal: { type: Number, required: true },
+  status: { type: String, enum: ['pending', 'paid', 'cancelled'], default: 'pending', index: true },
+}, { timestamps: true });
+
+module.exports = mongoose.model('Order', OrderSchema);
+```
+
+### 15.3 `libs/orders/order.routes.js`
+
+```js
+const express = require('express');
+const mongoose = require('mongoose');
+const { z } = require('zod');
+const { jwtMiddleware } = require('../auth/jwt-middleware');
+const { roleGuard } = require('../auth/role-guard');
+const Product = require('../products/product.model');
+const Order = require('./order.model');
+
+const router = express.Router();
+
+// Zod DTO for create order
+const CreateOrderDto = z.object({
+  items: z.array(z.object({
+    productId: z.string().min(1),
+    qty: z.number().int().positive()
+  })).min(1)
+});
+
+// Helpers
+async function priceSnapshot(items) {
+  // Fetch products and build map
+  const ids = items.map(i => i.productId);
+  const productDocs = await Product.find({ _id: { $in: ids } });
+  const map = new Map(productDocs.map(p => [p._id.toString(), p]));
+
+  // Build line items with snapshot and compute subtotal
+  let subtotal = 0;
+  const lines = items.map(it => {
+    const p = map.get(it.productId);
+    if (!p) throw new Error(`Product not found: ${it.productId}`);
+    const price = Number(p.price);
+    subtotal += price * it.qty;
+    return {
+      productId: new mongoose.Types.ObjectId(it.productId),
+      name: p.name,
+      price,
+      qty: it.qty
+    };
+  });
+  return { lines, subtotal };
+}
+
+// Create order (authenticated users)
+router.post('/', jwtMiddleware, async (req, res) => {
+  try {
+    const { items } = CreateOrderDto.parse(req.body);
+    const { lines, subtotal } = await priceSnapshot(items);
+
+    const order = await Order.create({
+      userId: new mongoose.Types.ObjectId(req.user.id),
+      items: lines,
+      subtotal,
+      status: 'pending'
+    });
+
+    res.status(201).json(order);
+  } catch (err) {
+    res.status(400).json({ error: err.message || 'Bad request' });
+  }
+});
+
+// Get current user's orders
+router.get('/my', jwtMiddleware, async (req, res) => {
+  const orders = await Order.find({ userId: req.user.id }).sort({ createdAt: -1 });
+  res.json(orders);
+});
+
+// Get one order (owner or admin)
+router.get('/:id', jwtMiddleware, async (req, res) => {
+  const order = await Order.findById(req.params.id);
+  if (!order) return res.status(404).json({ error: 'Not found' });
+  const isOwner = order.userId.toString() === req.user.id;
+  const isAdmin = req.user.role === 'admin';
+  if (!isOwner && !isAdmin) return res.status(403).json({ error: 'Forbidden' });
+  res.json(order);
+});
+
+// Admin: list all orders
+router.get('/', jwtMiddleware, roleGuard(['admin']), async (_req, res) => {
+  const orders = await Order.find().sort({ createdAt: -1 });
+  res.json(orders);
+});
+
+// Admin: update status
+router.patch('/:id/status', jwtMiddleware, roleGuard(['admin']), async (req, res) => {
+  const { status } = z.object({ status: z.enum(['pending', 'paid', 'cancelled']) }).parse(req.body);
+  const order = await Order.findByIdAndUpdate(req.params.id, { status }, { new: true });
+  if (!order) return res.status(404).json({ error: 'Not found' });
+  res.json(order);
+});
+
+module.exports = router;
+```
+
+### 15.4 Wire routes into API app
+
+Update `apps/api/main.js` to mount `/orders` routes:
+
+```js
+const orderRoutes = require('../../libs/orders/order.routes');
+// ...after other routes
+app.use('/orders', orderRoutes);
+```
+
+### 15.5 Product Model (if not already present)
+
+Ensure `libs/products/product.model.js` exists and includes a price field used for snapshots:
+
+```js
+const mongoose = require('mongoose');
+
+const ProductSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  price: { type: Number, required: true }
+}, { timestamps: true });
+
+module.exports = mongoose.model('Product', ProductSchema);
+```
+
+> If your previous products module already had a model, just confirm fields match `name` + `price`.
+
+### 15.6 Example cURL
+
+```bash
+# Register normal user
+curl -sX POST http://localhost:3000/auth/register -H 'content-type: application/json' \
+  -d '{"username":"bob","password":"bobpw","role":"user"}'
+
+# Register admin
+curl -sX POST http://localhost:3000/auth/register -H 'content-type: application/json' \
+  -d '{"username":"admin","password":"adminpw","role":"admin"}'
+
+# Login as admin
+ADMIN_TOKEN=$(curl -sX POST http://localhost:3000/auth/login -H 'content-type: application/json' \
+  -d '{"username":"admin","password":"adminpw"}' | jq -r .token)
+
+# Create products (admin only)
+curl -sX POST http://localhost:3000/products -H "authorization: Bearer $ADMIN_TOKEN" -H 'content-type: application/json' \
+  -d '{"name":"Notebook","price":5}'
+PROD_ID=$(curl -s http://localhost:3000/products | jq -r '.[0]._id')
+
+# Login as bob
+USER_TOKEN=$(curl -sX POST http://localhost:3000/auth/login -H 'content-type: application/json' \
+  -d '{"username":"bob","password":"bobpw"}' | jq -r .token)
+
+# Create order (user)
+curl -sX POST http://localhost:3000/orders -H "authorization: Bearer $USER_TOKEN" -H 'content-type: application/json' \
+  -d "{\"items\":[{\"productId\":\"$PROD_ID\",\"qty\":2}]}"
+
+# My orders
+curl -sH "authorization: Bearer $USER_TOKEN" http://localhost:3000/orders/my
+
+# Admin list all orders
+curl -sH "authorization: Bearer $ADMIN_TOKEN" http://localhost:3000/orders
+
+# Admin mark order as paid
+ORDER_ID=<paste-id>
+curl -sX PATCH http://localhost:3000/orders/$ORDER_ID/status -H "authorization: Bearer $ADMIN_TOKEN" -H 'content-type: application/json' -d '{"status":"paid"}'
+```
+
+### 15.7 Notes & Hardening
+
+* **Hashing**: already hashing passwords with `bcryptjs` on register.
+* **JWT secret & expiry**: set `JWT_SECRET` and consider shorter expiries + refresh tokens.
+* **Money**: prefer storing prices in **integer cents** to avoid float precision.
+* **Indexes**: we indexed `userId` and `status`; add compound indexes if you need reporting.
+* **Transactions**: if you need multi-doc atomicity (e.g., inventory), enable MongoDB replica set and wrap in `session` transactions.
+* **Validation**: Zod runs at the edge; Mongoose adds schema validation too.
+* **Rate limiting**: consider `express-rate-limit` on auth endpoints.
