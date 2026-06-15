@@ -1,4 +1,3 @@
-pk.eyJ1IjoicmFub2ppIiwiYSI6ImNtcWZrMW1uZTFtZnMycXBwYTYxdjJ0czgifQ.CwNGWxyQSc9QJcZAh3dVqw
 
 . Project Management and Agile Practices
 Adopt Agile: Daily standups, sprint planning, and retrospectives.
